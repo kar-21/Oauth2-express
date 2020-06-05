@@ -1,10 +1,11 @@
 var express = require("express");
-var https = require("https");
-var env = require('../env/env');
-var router = express.Router();
-
+var request = require("request");
 var google = require("googleapis");
-var userData = '';
+
+var env = require("../env/env");
+
+var router = express.Router();
+var userData = "";
 
 /* GET home page. */
 router.get("/", function (req, res, next) {
@@ -16,14 +17,18 @@ router.get("/loggedin", function (req, res, next) {
 });
 
 router.get("/data", function (req, res, next) {
-  res.render("data", {name: userData.name, email: userData.email, imageUrl: userData.picture })
-})
+  res.render("data", {
+    name: userData.name,
+    email: userData.email,
+    imageUrl: userData.picture,
+  });
+});
 
 const googleConfig = {
   clientId: env.env.google.clientId,
   clientSecret: env.env.google.clientSecret,
   redirect: env.env.google.redirect,
-}
+};
 
 function createConnection() {
   return new google.google.auth.OAuth2(
@@ -59,23 +64,15 @@ async function getGoogleAccountFromCode(code, response) {
   const { tokens } = await auth.getToken(code);
 
   auth.setCredentials(tokens);
-  https
-    .get(
-      `https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=${tokens.id_token}`,
-      (res) => {
-        let data = "";
-        res.on("data", (chunk) => {
-          data += chunk;
-        });
-        res.on("end", () => {
-          userData = JSON.parse(data);
-          response.redirect("data")
-        });
-      }
-    )
-    .on("error", (err) => {
-      return error;
-    });
+  request(
+    `https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=${tokens.id_token}`,
+    { json: true },
+    (err, res, body) => {
+      if(err) response.status(500).send(`some unexpected/uncaught async exception is thrown ${err}`);
+      userData = body
+      response.redirect('/data');
+    }
+  );
 }
 
 module.exports = router;

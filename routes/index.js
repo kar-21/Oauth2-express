@@ -46,7 +46,7 @@ const defaultScope = [
 
 function getConnectionUrl(auth) {
   return auth.generateAuthUrl({
-    acces_type: "offline",
+    access_type: "offline",
     prompt: "consent",
     scope: defaultScope,
   });
